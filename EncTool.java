@@ -145,36 +145,48 @@ public class EncTool {
     }
 
     private static void decryptAESCTR() {
-        System.out.println("AES CTR Decryption not yet supported");
+
         //ex1
         // hexKey = args[1];
         // inFile = args[2];
         // outFile = args[3];
+
         try{
-        RandomAccessFile rawDataFromFile = new RandomAccessFile(inFile, "r");
-        byte[] cipherText = new byte[(int) rawDataFromFile.length()];
-        rawDataFromFile.read(cipherText);
-        rawDataFromFile.close();
-        System.out.println(cipherText);
-        Cipher cipher = Cipher.getInstance("AES/CTR/PKCS5Padding");
-        SecretKeySpec secretKeySpec = new SecretKeySpec(hexStringToByteArray(hexKey), "AES");
-        //iv
-        // SecureRandom random = new SecureRandom();
+            //getting the data from the file
+            RandomAccessFile rawDataFromFile = new RandomAccessFile(inFile, "r");
+            byte[] cipherText = new byte[(int) rawDataFromFile.length()];
+            rawDataFromFile.read(cipherText);
+            rawDataFromFile.close();
+            System.out.println(cipherText);
+            Cipher cipher = Cipher.getInstance("AES/CTR/PKCS5Padding");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(hexStringToByteArray(hexKey), "AES");
 
 
-        // byte iv[] = new byte[16];
-        // random.nextBytes(iv);
-        // IvParameterSpec ivSpec = new IvParameterSpec(iv);
-        byte iv[] = new byte[16];
-        System.arraycopy(cipherText , 0, iv, 0, 16);
-        IvParameterSpec ivSpec = new IvParameterSpec(iv);
+            // seperating the data from the IV and copy to new byte arrays
+            byte iv[] = new byte[16];
+            byte text[] = new byte[cipherText.length-16];
+            System.arraycopy(cipherText , 0, iv, 0, 16);
+            System.arraycopy(cipherText, 16, text, 0, cipherText.length-16);
 
 
-         cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivSpec);
+            IvParameterSpec ivSpec = new IvParameterSpec(iv);
+            //System.out.println("IV: " + iv );
 
-         byte[] original = cipher.doFinal(cipherText);
-         //String plaintext = new String(original);
-         System.out.println("Plaintext: " + original);
+
+            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivSpec);
+            byte[] plainByte = cipher.doFinal(text);
+
+
+            // String plaintextString = new String(plainByte);
+            // System.out.println("Plaintext: " + plaintextString);
+
+
+            System.out.println("Openning file to write: "+outFile);
+
+            FileOutputStream outToFile = new FileOutputStream(outFile);
+            outToFile.write(plainByte);
+            outToFile.close();
+            System.out.println(inFile+" encrypted as "+outFile);
 
 
         }
@@ -217,6 +229,7 @@ public class EncTool {
             SecureRandom random = new SecureRandom();
             byte iv[] = new byte[16];
             random.nextBytes(iv);
+          //  System.out.println("IV: " + iv );
             IvParameterSpec ivSpec = new IvParameterSpec(iv);
             encAESCTRcipher.init(Cipher.ENCRYPT_MODE, secretKeySpec,ivSpec);
 
