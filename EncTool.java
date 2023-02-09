@@ -139,6 +139,7 @@ public class EncTool {
             Certificate cert = myKeyStore.getCertificate(keyName);
             publicKey = cert.getPublicKey();
 
+
         } catch (Exception e) {
             System.out.println("Doh: " + e);
         }
@@ -147,66 +148,66 @@ public class EncTool {
 
     private static void decryptRSA() {
         System.out.println("RSA Decryption not yet supported");
-        byte[] decryptedData = null;
-        String password = "password";
-        try {
-            // get th public key key
-            // get key
+        try{
 
-            PublicKey publicKey = getPubKey(keyStore, keyName);
-            System.out.println("Loading plaintext file: " + inFile);
-            RandomAccessFile rawDataFromFile = new RandomAccessFile(inFile, "r");
-            byte[] ciphertext = new byte[(int) rawDataFromFile.length()];
-            rawDataFromFile.read(ciphertext);
+            // getting private key from the keystore
+            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+            FileInputStream inStream = new FileInputStream(keyStore);
+            Console console = System.console();
+            char[] password = console.readPassword("Enter your secret password: ");
+            ks.load(inStream, password);
+          //  System.out.println("Getting private key");
+            // KeyStore.PrivateKeyEntry pKeyEntry = (KeyStore.PrivateKeyEntry)ks.getKey(keyName, password);
+            PrivateKey privatekey = (PrivateKey)ks.getKey(keyName, password);
 
-            Cipher cipher = Cipher.getInstance("RSA");
-            cipher.init(Cipher.DECRYPT_MODE, publicKey);
+           //System.out.println("Private key: " + privatekey.getEncoded());
 
-            byte[] ciphertxt = new byte[ciphertext.length - 256];
-            // System.arraycopy(ciphertext, 0, encodedKey, 0, 256);
-            System.arraycopy(ciphertext, 256, ciphertxt, 0, ciphertext.length - 256);
 
-            byte[] txt = cipher.doFinal(ciphertext);
-            System.out.println("Plaintext: " + txt);
+            // loading the cipher text
+           System.out.println("Loading cipher text file: " + inFile);
+           RandomAccessFile rawDataFromFile = new RandomAccessFile(inFile, "r");
+           byte[] ciphertext = new byte[(int) rawDataFromFile.length()];
+           rawDataFromFile.read(ciphertext);
 
-            // byte[] ciphertxt = new byte[ciphertext.length - 256];
+        // getting the AES key and cipher text and splitting them
+           byte AES[] = new byte[256];
+           byte text[] = new byte[ciphertext.length - 256];
+           System.arraycopy(ciphertext, 0, AES, 0, 256);
+           System.arraycopy(ciphertext, 256, text, 0, ciphertext.length - 256);
 
-            // // System.arraycopy(ciphertext, 0, encodedKey, 0, 256);
-            // System.arraycopy(ciphertext, 256, ciphertxt, 0, ciphertext.length - 256);
+            // decrpyt AES key
 
-            // decryptedData = cipher.doFinal(ciphertxt);
-            // System.out.println("Decrypted Key: " + decryptedData);
-            // PublicKey publicKey = getPubKey(keyStore, keyName);
-            // Cipher rsaCipher = Cipher.getInstance("RSA");
-            // rsaCipher.init(Cipher.DECRYPT_MODE, publicKey);
-            // byte[] encodedKey = new byte[256];
+            Cipher AEScip = Cipher.getInstance("RSA");
+           // SecretKeySpec secKey = new SecretKeySpec(privatekey.getEncoded(), "AES");
+            AEScip.init(Cipher.DECRYPT_MODE, privatekey);
+            byte[] plainAES = AEScip.doFinal(AES);
 
-            // Read the cipher text and key
 
-            // byte[] ciphertxt = new byte[ciphertext.length - 256];
+            // decrpt the cipherText using AES
 
-            // System.arraycopy(ciphertext, 0, encodedKey, 0, 256);
-            // System.arraycopy(ciphertext, 256, ciphertxt, 0, ciphertext.length - 256);
-            // System.out.println("key: " + encodedKey);
-            // byte[] decoded_key = rsaCipher.doFinal(encodedKey);
-            // SecretKeySpec skey = new SecretKeySpec(decoded_key, );
+            Cipher cipher = Cipher.getInstance("AES");
+            SecretKeySpec secKey = new SecretKeySpec(plainAES, "AES");
+            cipher.init(Cipher.DECRYPT_MODE, secKey);
+            byte[] plaintxt = cipher.doFinal(text);
 
-            // Cipher decTxt = Cipher.getInstance("RSA");
-            // decTxt.init(Cipher.DECRYPT_MODE, skey);
-            // decTxt.doFinal(ciphertext);
 
-            // System.out.println("Public key: " + publicKey);
-            // System.out.println("key: " + decoded_key);
-            // System.out.println("txt: " + decTxt);
+            String plaintextString = new String(plaintxt);
+          //  System.out.println("Plaintext: " +  plaintextString);
 
-            // // get key from cipher text
 
-            // // byte[] decrpyedtxt = rsaCipher.doFinal(ciphertxt);
-            // // String plaintext = new String(decrpyedtxt);
-            // System.out.println("Plaintext: " + decTxt);
+            System.out.println("Openning file to write: " + outFile);
 
-        } catch (Exception e) {
-            System.out.println(e);
+            FileOutputStream outToFile = new FileOutputStream(outFile);
+            outToFile.write(plaintxt);
+            outToFile.close();
+            rawDataFromFile.close();
+            System.out.println(inFile + " encrypted as " + outFile);
+
+
+
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
